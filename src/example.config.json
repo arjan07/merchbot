@@ -1,0 +1,20 @@
+{
+  "discord-token": "",
+  "store-details": [
+    {
+      "store-name": "",
+      "store-name-short": "",
+      "store-url": "",
+      "discord-information": [
+        {
+          "channel-id": "",
+          "role-id": ""
+        }
+      ],
+      "currency-symbol": "£",
+      "enable-cart": true,
+      "enable-buy-now": true,
+      "fast-fetch": true
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "node",
+    "target": "esnext",
+    "outDir": "./dist",
+    "lib": [
+      "es2021",
+      "dom",
+      "es5",
+      "es6",
+      "dom.iterable"
+    ],
+    "sourceMap": true,
+    "types": [
+      "node",
+    ],
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "strict": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "./**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
