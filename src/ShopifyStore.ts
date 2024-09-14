@@ -101,7 +101,8 @@ export default class ShopifyStore {
             .then(() => (this.ready = true))
             .then(() =>
                 setInterval(async () => await this.post(), this.interval),
-            );
+            )
+            .catch((e) => console.log(e));
     }
 
     /**
