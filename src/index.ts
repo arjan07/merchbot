@@ -5,10 +5,12 @@ import {
     GatewayIntentBits,
     Snowflake,
 } from 'discord.js';
-import { parseCronExpression, TimerBasedCronScheduler } from 'cron-schedule';
+import { parseCronExpression } from 'cron-schedule';
+import { TimerBasedCronScheduler } from 'cron-schedule/schedulers/timer-based.js';
 import ShopifyStore from './ShopifyStore.js';
-import { isJSON } from './utilities.js';
-import config from './config.json' assert { type: 'json' };
+import { isJSON, loadJSON } from './utilities.js';
+import { ConfigInterface } from './interface/configInterface.js';
+const config = (await loadJSON('../config.json')) as ConfigInterface;
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
@@ -26,7 +28,7 @@ const stores = details.map(
             details['currency-symbol'],
             details['enable-cart'],
             details['enable-buy-now'],
-            details['fast-fetch'],
+            details['interval'],
         ),
 );
 
@@ -34,20 +36,6 @@ const cartCache = new Collection<
     Snowflake,
     { [storeName: string]: number[] } | null
 >();
-
-const fastFetchStore = (stores: ShopifyStore[]) => {
-    const fastFetchStores = stores.filter((store) =>
-        store.isFastFetchEnabled(),
-    );
-    fastFetchStores.forEach((store) => store.post());
-};
-
-const slowFetchStore = (stores: ShopifyStore[]) => {
-    const slowFetchStores = stores.filter(
-        (store) => !store.isFastFetchEnabled(),
-    );
-    slowFetchStores.forEach((store) => store.post());
-};
 
 const enableStores = (stores: ShopifyStore[]) => {
     const disabledStores = stores.filter((store) => !store.isReady());
@@ -62,8 +50,6 @@ client.once(Events.ClientReady, () => {
 });
 
 client.on(Events.ClientReady, async () => {
-    setInterval(async () => fastFetchStore(stores), 10000);
-    setInterval(async () => slowFetchStore(stores), 30000);
     TimerBasedCronScheduler.setInterval(
         parseCronExpression('*/30 * * * *'),
         () => cartCache.clear(),

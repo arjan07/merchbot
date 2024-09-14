@@ -37,7 +37,7 @@ export default class ShopifyStore {
     private readonly currencySymbol: string;
     private readonly enableCart: boolean;
     private readonly enableBuyNow: boolean;
-    private readonly fastFetch: boolean;
+    private readonly interval: number;
     private readonly productFetchLimit: number;
 
     /**
@@ -50,7 +50,7 @@ export default class ShopifyStore {
      * @param currencySymbol The currency prefix of the Shopify store (e.g £)
      * @param enableCart Whether cart/basket functionality should be enabled for this Shopify store
      * @param enableBuyNow Whether "buy now" functionality should be enabled for this Shopify store
-     * @param fastFetch Whether "fast fetch" functionality should be enabled for this Shopify store. Fast fetch will check the store for new products every 10 seconds
+     * @param interval How often to search the Shopify store for new products (in milliseconds)
      */
     constructor(
         client: Client,
@@ -61,7 +61,7 @@ export default class ShopifyStore {
         currencySymbol: string,
         enableCart: boolean,
         enableBuyNow: boolean,
-        fastFetch: boolean,
+        interval: number,
     ) {
         this.client = client;
         this.storeName = storeName;
@@ -73,7 +73,7 @@ export default class ShopifyStore {
         this.currencySymbol = currencySymbol;
         this.enableCart = enableCart;
         this.enableBuyNow = enableBuyNow;
-        this.fastFetch = fastFetch;
+        this.interval = interval;
         this.productFetchLimit = 250;
     }
 
@@ -98,7 +98,10 @@ export default class ShopifyStore {
                     `Cached ${products.length} products for ${this.storeName}`,
                 );
             })
-            .then(() => (this.ready = true));
+            .then(() => (this.ready = true))
+            .then(() =>
+                setInterval(async () => await this.post(), this.interval),
+            );
     }
 
     /**
@@ -140,7 +143,7 @@ export default class ShopifyStore {
      * filtered by whether the product is available or not
      * @private
      */
-    private async fetchProductData() {
+    private async fetchProductData(): Promise<Product[]> {
         return await fetch(
             `${this.storeUrl}/products.json?limit=${this.productFetchLimit}`,
         )
@@ -159,7 +162,9 @@ export default class ShopifyStore {
      * @param products The new products data
      * @private
      */
-    private filterProducts(products: Collection<number, CollectionProduct>) {
+    private filterProducts(
+        products: Collection<number, CollectionProduct>,
+    ): Collection<number, CollectionProduct> {
         return products.filter((product) => {
             const existingProduct = this.collection.get(product.id);
             return (
@@ -179,7 +184,7 @@ export default class ShopifyStore {
     private updateCollection(
         collection: Collection<number, CollectionProduct>,
         products: Product[],
-    ) {
+    ): void {
         products.forEach((product) =>
             collection.set(product.id, {
                 id: product.id,
@@ -206,7 +211,7 @@ export default class ShopifyStore {
      * @param whatsNew The description of what's changed
      * @private
      */
-    private postToDiscord(product: CollectionProduct, whatsNew: string) {
+    private postToDiscord(product: CollectionProduct, whatsNew: string): void {
         const messageContent = `${product.title} - ${bold(whatsNew)}`;
         const embed = this.createProductEmbed(product);
         const components = this.createComponents(product);
@@ -265,7 +270,12 @@ export default class ShopifyStore {
      * @param product
      * @private
      */
-    private createComponents(product: CollectionProduct) {
+    private createComponents(
+        product: CollectionProduct,
+    ): (
+        | ActionRowBuilder<ButtonBuilder>
+        | ActionRowBuilder<StringSelectMenuBuilder>
+    )[] {
         if (!this.enableCart) {
             return [];
         }
@@ -382,16 +392,9 @@ export default class ShopifyStore {
     }
 
     /**
-     * Used to filter out ShopifyStores that do not have fast fetch enabled.
-     */
-    public isFastFetchEnabled() {
-        return this.fastFetch;
-    }
-
-    /**
      * Checks to see if the ShopifyStore is ready to searched for new products.
      */
-    public isReady() {
+    public isReady(): boolean {
         return this.ready;
     }
 
@@ -399,14 +402,14 @@ export default class ShopifyStore {
      * Enables a ShopifyStore so that it is ready to be searched for new
      * products.
      */
-    public enableStore() {
+    public enableStore(): void {
         this.ready = true;
     }
 
     /**
      * Disables a ShopifyStore so that it won't be searched anymore.
      */
-    public disableStore() {
+    public disableStore(): void {
         this.ready = false;
     }
 }
