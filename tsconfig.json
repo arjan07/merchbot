@@ -24,7 +24,12 @@
     "emitDecoratorMetadata": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "cron-schedule/schedulers/timer-based.js": [
+        "./node_modules/cron-schedule/dist/schedulers/timer-based.d.ts"
+      ]
+    }
   },
   "include": [
     "./**/*"

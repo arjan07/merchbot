@@ -14,7 +14,7 @@
       "currency-symbol": "£",
       "enable-cart": true,
       "enable-buy-now": true,
-      "fast-fetch": true
+      "interval": 10000
     }
   ]
 }
