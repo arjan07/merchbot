@@ -14,6 +14,7 @@ interface StoreDetails {
     'enable-cart': boolean;
     'enable-buy-now': boolean;
     interval: number;
+    'mass-ping-limit'?: number;
 }
 
 interface DiscordInformation {

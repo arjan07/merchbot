@@ -15,6 +15,7 @@ import {
     StringSelectMenuBuilder,
     StringSelectMenuOptionBuilder,
     TextChannel,
+    underline,
 } from 'discord.js';
 import { diff } from 'deep-object-diff';
 import { Product, ShopifyResponse } from './interface/shopifyProduct.js';
@@ -38,6 +39,7 @@ export default class ShopifyStore {
     private readonly enableCart: boolean;
     private readonly enableBuyNow: boolean;
     private readonly interval: number;
+    private readonly massPingLimit: number | undefined;
     private readonly productFetchLimit: number;
 
     /**
@@ -51,6 +53,7 @@ export default class ShopifyStore {
      * @param enableCart Whether cart/basket functionality should be enabled for this Shopify store
      * @param enableBuyNow Whether "buy now" functionality should be enabled for this Shopify store
      * @param interval How often to search the Shopify store for new products (in milliseconds)
+     * @param massPingLimit Prevent mass pinging whenever a given number of items are refreshed in a store
      */
     constructor(
         client: Client,
@@ -62,6 +65,7 @@ export default class ShopifyStore {
         enableCart: boolean,
         enableBuyNow: boolean,
         interval: number,
+        massPingLimit?: number,
     ) {
         this.client = client;
         this.storeName = storeName;
@@ -74,6 +78,7 @@ export default class ShopifyStore {
         this.enableCart = enableCart;
         this.enableBuyNow = enableBuyNow;
         this.interval = interval;
+        this.massPingLimit = massPingLimit;
         this.productFetchLimit = 250;
     }
 
@@ -122,12 +127,22 @@ export default class ShopifyStore {
             this.updateCollection(productCollection, products);
 
             const newProducts = this.filterProducts(productCollection);
+
             if (newProducts.size > 0) {
-                newProducts.forEach((product) => {
-                    const whatsNew = this.whatsNew(product);
-                    if (typeof whatsNew === 'boolean') return;
-                    this.postToDiscord(product, whatsNew);
-                });
+                const shouldMassPost =
+                    this.massPingLimit &&
+                    newProducts.size >= this.massPingLimit;
+
+                if (shouldMassPost) {
+                    this.massPostToDiscord(newProducts);
+                } else {
+                    newProducts.forEach((product) => {
+                        const whatsNew = this.whatsNew(product);
+                        if (typeof whatsNew !== 'boolean') {
+                            this.postToDiscord(product, whatsNew);
+                        }
+                    });
+                }
             }
 
             this.collection.clear();
@@ -213,7 +228,7 @@ export default class ShopifyStore {
      * @private
      */
     private postToDiscord(product: CollectionProduct, whatsNew: string): void {
-        const messageContent = `${product.title} - ${bold(whatsNew)}`;
+        const messageContent = `${underline(this.storeName)}: ${product.title} - ${bold(whatsNew)}`;
         const embed = this.createProductEmbed(product);
         const components = this.createComponents(product);
 
@@ -225,6 +240,39 @@ export default class ShopifyStore {
                 content: `${messageContent} ${roleMention(guild['role-id'])}`,
                 embeds: [embed],
                 components: components,
+            });
+        });
+    }
+
+    /**
+     * Handles grouping multiple refreshed products into one ping to prevent mass pinging from occurring.
+     * @param newProducts The new products data as a Collection
+     * @private
+     */
+    private massPostToDiscord(
+        newProducts: Collection<number, CollectionProduct>,
+    ): void {
+        const embeds = Array.from(newProducts.values(), (product) =>
+            this.createProductEmbed(product),
+        ).reduce((all, one, i) => {
+            const chunkIndex = Math.floor(i / 5);
+            all[chunkIndex] = (all[chunkIndex] || []).concat(one);
+            return all;
+        }, [] as EmbedBuilder[][]);
+
+        const messageContent = `${underline(this.storeName)}: ${bold(`${newProducts.size} Products Added/Restocked!`)} View channel for more information.`;
+
+        this.discordInformation.forEach((guild) => {
+            const channel = this.client.channels.cache.get(
+                guild['channel-id'],
+            ) as TextChannel;
+            embeds.forEach((embed, i) => {
+                void channel.send({
+                    ...(i === 0 && {
+                        content: `${messageContent} ${roleMention(guild['role-id'])}`,
+                    }),
+                    embeds: embed,
+                });
             });
         });
     }
