@@ -29,6 +29,7 @@ const stores = details.map(
             details['enable-cart'],
             details['enable-buy-now'],
             details['interval'],
+            details['mass-ping-limit'],
         ),
 );
 
