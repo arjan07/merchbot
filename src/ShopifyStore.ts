@@ -96,18 +96,18 @@ export default class ShopifyStore {
             );
         }
 
-        await this.fetchProductData()
-            .then((products) => {
-                this.updateCollection(this.collection, products);
-                console.log(
-                    `Cached ${products.length} products for ${this.storeName}`,
-                );
-            })
-            .then(() => (this.ready = true))
-            .then(() =>
-                setInterval(async () => await this.post(), this.interval),
-            )
-            .catch((e) => console.log(e));
+        try {
+            const products = await this.fetchProductData();
+            this.updateCollection(this.collection, products);
+            console.log(
+                `Cached ${products.length} products for ${this.storeName}`,
+            );
+            this.enableStore();
+            setInterval(async () => await this.post(), this.interval);
+        } catch (error) {
+            this.disableStore();
+            console.error(error);
+        }
     }
 
     /**
@@ -160,16 +160,13 @@ export default class ShopifyStore {
      * @private
      */
     private async fetchProductData(): Promise<Product[]> {
-        return await fetch(
+        const response = await fetch(
             `${this.storeUrl}/products.json?limit=${this.productFetchLimit}`,
-        )
-            .then((response) => response.json())
-            .then((response) => response as ShopifyResponse)
-            .then((response) =>
-                response.products.filter((product) =>
-                    product.variants.some((p) => p.available),
-                ),
-            );
+        );
+        const data = (await response.json()) as ShopifyResponse;
+        return data.products.filter((product) =>
+            product.variants.some((p) => p.available),
+        );
     }
 
     /**
