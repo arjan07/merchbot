@@ -1,6 +1,6 @@
 {
   "name": "merchbot",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A bot to ping a channel in Discord when an item is refreshed on a Shopify store",
   "main": "dist/index.js",
   "scripts": {
