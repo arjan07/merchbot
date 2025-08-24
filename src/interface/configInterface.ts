@@ -15,6 +15,7 @@ interface StoreDetails {
     'enable-buy-now': boolean;
     interval: number;
     'mass-ping-limit'?: number;
+    'webhook-url'?: string;
 }
 
 interface DiscordInformation {

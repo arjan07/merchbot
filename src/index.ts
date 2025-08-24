@@ -30,6 +30,7 @@ const stores = details.map(
             details['enable-buy-now'],
             details['interval'],
             details['mass-ping-limit'],
+            details['webhook-url'],
         ),
 );
 
