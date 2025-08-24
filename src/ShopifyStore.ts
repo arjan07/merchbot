@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import {
     ActionRowBuilder,
+    APIMessage,
     bold,
     ButtonBuilder,
     ButtonStyle,
@@ -9,6 +10,7 @@ import {
     Colors,
     EmbedBuilder,
     hyperlink,
+    inlineCode,
     roleMention,
     Snowflake,
     strikethrough,
@@ -16,6 +18,7 @@ import {
     StringSelectMenuOptionBuilder,
     TextChannel,
     underline,
+    WebhookClient,
 } from 'discord.js';
 import { diff } from 'deep-object-diff';
 import { Product, ShopifyResponse } from './interface/shopifyProduct.js';
@@ -41,6 +44,7 @@ export default class ShopifyStore {
     private readonly interval: number;
     private readonly massPingLimit: number | undefined;
     private readonly productFetchLimit: number;
+    private readonly webhookClient: WebhookClient | undefined;
 
     /**
      * Creates a new instance of a Shopify Store.
@@ -54,6 +58,7 @@ export default class ShopifyStore {
      * @param enableBuyNow Whether "buy now" functionality should be enabled for this Shopify store
      * @param interval How often to search the Shopify store for new products (in milliseconds)
      * @param massPingLimit Prevent mass pinging whenever a given number of items are refreshed in a store
+     * @param webhookUrl URL to send webhook error updates to
      */
     constructor(
         client: Client,
@@ -66,6 +71,7 @@ export default class ShopifyStore {
         enableBuyNow: boolean,
         interval: number,
         massPingLimit?: number,
+        webhookUrl?: string,
     ) {
         this.client = client;
         this.storeName = storeName;
@@ -80,6 +86,9 @@ export default class ShopifyStore {
         this.interval = interval;
         this.massPingLimit = massPingLimit;
         this.productFetchLimit = 250;
+        this.webhookClient = webhookUrl
+            ? new WebhookClient({ url: webhookUrl })
+            : undefined;
     }
 
     /**
@@ -150,6 +159,7 @@ export default class ShopifyStore {
             this.enableStore();
         } catch (error) {
             this.disableStore();
+            await this.errorAlert((error as Error).toString());
             console.error(this.storeName, error);
         }
     }
@@ -435,6 +445,23 @@ export default class ShopifyStore {
         return variantsRestocked
             ? `Restocked Variants (${inStock.join(', ')})`
             : false;
+    }
+
+    /**
+     * Sends a message via webhook whenever a store error occurs.
+     * @param error The error message
+     * @returns {APIMessage>}
+     * @private
+     */
+    private async errorAlert(error: string): Promise<APIMessage | undefined> {
+        if (!this.webhookClient) return;
+        const embed = new EmbedBuilder()
+            .setTitle(`Alert: Error for ${this.storeName}`)
+            .setDescription(`${inlineCode(error)}`)
+            .setTimestamp()
+            .setColor(Colors.Red);
+
+        return this.webhookClient.send({ embeds: [embed] });
     }
 
     /**
