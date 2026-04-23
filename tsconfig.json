@@ -1,40 +1,19 @@
 {
   "compilerOptions": {
-    "module": "esnext",
-    "moduleResolution": "node",
+    "module": "node16",
+    "moduleResolution": "node16",
+    "outDir": "dist",
+    "rootDir": "src",
     "target": "esnext",
-    "outDir": "./dist",
-    "lib": [
-      "es2021",
-      "dom",
-      "es5",
-      "es6",
-      "dom.iterable"
-    ],
-    "sourceMap": true,
-    "types": [
-      "node",
-    ],
-    "typeRoots": [
-      "node_modules/@types"
-    ],
     "strict": true,
-    "skipLibCheck": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
     "resolveJsonModule": true,
-    "paths": {
-      "cron-schedule/schedulers/timer-based.js": [
-        "./node_modules/cron-schedule/dist/schedulers/timer-based.d.ts"
-      ]
-    }
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
   },
-  "include": [
-    "./**/*"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src"]
 }
